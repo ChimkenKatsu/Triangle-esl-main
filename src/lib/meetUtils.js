@@ -11,14 +11,9 @@ const TEMPLATE_ID = "template_wi9tyqg";
 const PUBLIC_KEY  = "fXAJyVdcDMwGJwoGQ";
 const ADMIN_EMAIL = "triangle.esldivision1@gmail.com";
 
-// Template variables (must match EmailJS template exactly):
-//   {{name}}        — sender name shown in header
-//   {{email}}       — used in Reply To field
-//   {{message}}     — main body content block
-//   {{meet_link}}   — Google Meet URL
-//   {{title}}       — email subject suffix
-
 async function sendEmailJS(params) {
+  console.log("[EmailJS] Sending with params:", params);
+
   const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,39 +25,43 @@ async function sendEmailJS(params) {
     }),
   });
 
+  const text = await res.text();
+  console.log("[EmailJS] Response:", res.status, text);
+
   if (!res.ok) {
-    const text = await res.text();
-    console.error("[EmailJS] Send failed:", text);
-    throw new Error(`EmailJS error: ${text}`);
+    throw new Error(`EmailJS error ${res.status}: ${text}`);
   }
+  return text;
 }
 
 // ── Booking confirmation ───────────────────────────────────────
 export async function sendBookingEmails({
   studentName, studentEmail, teacher, slot, pkg, amount, meetLink,
 }) {
-  // To student
+  // To student — uses every variable the template has
   await sendEmailJS({
-    title:     "Your Triangle ESL Class is Confirmed – Meeting Link Inside",
-    name:      studentName,
-    email:     studentEmail,
-    meet_link: meetLink,
+    title:         "Your Triangle ESL Class is Confirmed – Meeting Link Inside",
+    name:          studentName,
+    email:         studentEmail,         // {{email}} → Reply To
+    student_email: studentEmail,         // {{student_email}} → To Email (if template uses this)
+    meet_link:     meetLink,
     message:
       `Your class has been confirmed! Here are your details:\n\n` +
       `Teacher: ${teacher}\n` +
       `Schedule: ${slot}\n` +
       `Package: ${pkg}\n` +
       `Amount: ${amount}\n\n` +
-      `Join your class here:\n${meetLink}\n\n` +
+      `Join your class here: ${meetLink}\n\n` +
       `If you have any questions, reply to this email.\n\n-Triangle ESL Team`,
   });
 
   // To admin
   await sendEmailJS({
-    title:     "New Booking Received",
-    name:      "Triangle ESL Admin",
-    email:     ADMIN_EMAIL,
-    meet_link: meetLink,
+    title:         "New Booking Received",
+    name:          "Triangle ESL Admin",
+    email:         ADMIN_EMAIL,
+    student_email: ADMIN_EMAIL,
+    meet_link:     meetLink,
     message:
       `New booking received!\n\n` +
       `Student: ${studentName} <${studentEmail}>\n` +
@@ -80,26 +79,28 @@ export async function sendDemoEmails({
 }) {
   // To student
   await sendEmailJS({
-    title:     "Your Free 10-Minute Demo is Booked!",
-    name:      studentName,
-    email:     studentEmail,
-    meet_link: meetLink,
+    title:         "Your Free 10-Minute Demo is Booked! – Meeting Link Inside",
+    name:          studentName,
+    email:         studentEmail,         // {{email}} → Reply To
+    student_email: studentEmail,         // {{student_email}} → To Email
+    meet_link:     meetLink,
     message:
       `Your FREE 10-minute demo class has been booked!\n\n` +
       `Schedule: ${slot}\n` +
       `English Level: ${level}\n` +
       `Session Duration: 10 minutes\n\n` +
-      `Join your demo here:\n${meetLink}\n\n` +
+      `Join your demo here: ${meetLink}\n\n` +
       `The session will be 10 minutes for demo classes.\n\n` +
       `If you have any questions, reply to this email.\n\n-Triangle ESL Team`,
   });
 
   // To admin
   await sendEmailJS({
-    title:     "New Demo Request Received",
-    name:      "Triangle ESL Admin",
-    email:     ADMIN_EMAIL,
-    meet_link: meetLink,
+    title:         "New Demo Request Received",
+    name:          "Triangle ESL Admin",
+    email:         ADMIN_EMAIL,
+    student_email: ADMIN_EMAIL,
+    meet_link:     meetLink,
     message:
       `New DEMO REQUEST received!\n\n` +
       `Student: ${studentName} <${studentEmail}>\n` +
